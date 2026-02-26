@@ -6,34 +6,29 @@
     <title>星际战机 - 肉鸽版</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body {
-            display: flex; flex-direction: column; align-items: center;
-            min-height: 100vh;
-            background: linear-gradient(180deg, #0a0a1a 0%, #1a1a3a 50%, #0d0d2b 100%);
-            font-family: 'Segoe UI', sans-serif; overflow: hidden; touch-action: none;
-        }
+        body { display: flex; flex-direction: column; align-items: center; min-height: 100vh; background: linear-gradient(180deg, #0a0a1a 0%, #1a1a3a 50%, #0d0d2b 100%); font-family: 'Segoe UI', sans-serif; overflow: hidden; touch-action: none; }
         .stars { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
         .star { position: absolute; background: white; border-radius: 50%; animation: twinkle 2s infinite; }
         @keyframes twinkle { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
         h1 { color: #00ffff; margin: 10px 0; text-shadow: 0 0 20px #00ffff; font-size: 20px; z-index: 1; }
-        .game-info {
-            display: flex; justify-content: space-between; width: 95%; max-width: 480px;
-            color: #fff; font-size: 12px; margin-bottom: 5px; z-index: 1;
-        }
+        .game-info { display: none; justify-content: space-between; width: 95%; max-width: 480px; color: #fff; font-size: 12px; margin-bottom: 5px; z-index: 1; }
+        .game-info.active { display: flex; }
         .game-info span { background: rgba(0, 255, 255, 0.1); padding: 5px 10px; border-radius: 5px; }
         .hp-bar { width: 80px; height: 10px; background: rgba(255, 0, 0, 0.3); border-radius: 5px; overflow: hidden; }
         .hp-fill { height: 100%; background: linear-gradient(90deg, #ff4444, #ff8844); transition: width 0.3s; }
-        #gameCanvas { border: 2px solid rgba(0, 255, 255, 0.5); border-radius: 10px; background: rgba(0, 0, 0, 0.5); z-index: 1; }
-        .controls-hint { color: rgba(255, 255, 255, 0.6); font-size: 11px; margin-top: 8px; text-align: center; z-index: 1; }
+        #gameCanvas { display: none; border: 2px solid rgba(0, 255, 255, 0.5); border-radius: 10px; background: rgba(0, 0, 0, 0.5); z-index: 1; }
+        #gameCanvas.active { display: block; }
+        .controls-hint { display: none; color: rgba(255, 255, 255, 0.6); font-size: 11px; margin-top: 8px; text-align: center; z-index: 1; }
+        .controls-hint.active { display: block; }
         .touch-controls { display: none; position: fixed; bottom: 20px; left: 20px; width: 120px; height: 120px; background: rgba(255, 255, 255, 0.1); border-radius: 50%; border: 2px solid rgba(0, 255, 255, 0.3); z-index: 100; }
+        .touch-controls.active { display: block; }
         .joystick-knob { position: absolute; width: 50px; height: 50px; background: radial-gradient(circle, rgba(0, 255, 255, 0.8), rgba(0, 200, 255, 0.5)); border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%, -50%); }
-        .fire-btn { position: fixed; bottom: 40px; right: 30px; width: 70px; height: 70px; background: radial-gradient(circle, #ff4444, #ff0000); border-radius: 50%; color: white; font-size: 14px; font-weight: bold; display: flex; justify-content: center; align-items: center; z-index: 100; }
-        @media (max-width: 600px) { .touch-controls { display: block; } }
-        .upgrade-modal, .game-over, .start-screen { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 200; justify-content: center; align-items: center; flex-direction: column; }
-        .upgrade-modal.show, .game-over.show, .start-screen.show, .start-screen:not(.hidden) { display: flex; }
-        .start-screen.hidden { display: none; }
-        .upgrade-modal, .game-over { background: rgba(0, 0, 0, 0.9); }
+        .fire-btn { display: none; position: fixed; bottom: 40px; right: 30px; width: 70px; height: 70px; background: radial-gradient(circle, #ff4444, #ff0000); border-radius: 50%; color: white; font-size: 14px; font-weight: bold; justify-content: center; align-items: center; z-index: 100; }
+        .fire-btn.active { display: flex; }
+        @media (max-width: 600px) { .touch-controls.active { display: block; } }
+        .upgrade-modal, .game-over, .start-screen { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 200; justify-content: center; align-items: center; flex-direction: column; background: rgba(0, 0, 0, 0.9); }
         .start-screen { background: linear-gradient(180deg, #0a0a1a, #1a1a3a); z-index: 400; }
+        .start-screen.hidden, .upgrade-modal.hidden, .game-over.hidden { display: none; }
         .upgrade-modal h2 { color: #ffd700; font-size: 24px; margin-bottom: 20px; animation: pulse 1s infinite; }
         @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
         .upgrade-options { display: flex; gap: 15px; flex-wrap: wrap; justify-content: center; max-width: 400px; }
@@ -63,17 +58,17 @@
 <body>
     <div class="stars" id="stars"></div>
     <h1>🚀 星际战机 - 肉鸽版</h1>
-    <div class="game-info">
+    <div class="game-info" id="gameInfo">
         <span>关卡: <span id="level">1</span></span>
         <span>分数: <span id="score">0</span></span>
         <span class="gold">💰: <span id="gold">0</span></span>
         <div class="hp-bar"><div class="hp-fill" id="hpFill"></div></div>
     </div>
     <canvas id="gameCanvas" width="400" height="550"></canvas>
-    <div class="controls-hint">电脑：WASD/方向键移动 | 空格/J射击</div>
+    <div class="controls-hint" id="controlsHint">电脑：WASD/方向键移动 | 空格/J射击</div>
     <div class="touch-controls" id="touchControls"><div class="joystick-knob" id="joystickKnob"></div></div>
     <div class="fire-btn" id="fireBtn">开火</div>
-    <div class="start-screen show" id="startScreen">
+    <div class="start-screen" id="startScreen">
         <h1>🚀 星际战机</h1>
         <p class="subtitle">肉鸽版</p>
         <div class="features">
@@ -82,14 +77,14 @@
             <p>👹 <span class="gold-text">BOSS战</span>：每5关遇到强力BOSS</p>
             <p>✨ <span class="gold-text">roguelike</span>：每次体验都不同</p>
         </div>
-        <button class="btn" onclick="startGame()">开始游戏</button>
+        <button class="btn" id="startBtn">开始游戏</button>
     </div>
-    <div class="upgrade-modal" id="upgradeModal">
+    <div class="upgrade-modal hidden" id="upgradeModal">
         <h2>⚡ 选择升级!</h2>
         <div class="upgrade-options" id="upgradeOptions"></div>
     </div>
     <div class="boss-warning" id="bossWarning">⚠️ BOSS来袭! ⚠️</div>
-    <div class="game-over" id="gameOver">
+    <div class="game-over hidden" id="gameOver">
         <h2>💀 游戏结束</h2>
         <div class="stats">
             <p>最终得分: <span id="finalScore">0</span></p>
@@ -97,9 +92,10 @@
             <p>击败BOSS: <span id="finalBosses">0</span></p>
             <p class="gold">💰 金币: <span id="finalGold">0</span></p>
         </div>
-        <button class="btn" onclick="restartGame()">再来一局</button>
+        <button class="btn" id="restartBtn">再来一局</button>
     </div>
     <script>
+        // 初始化星空
         const starsContainer = document.getElementById('stars');
         for (let i = 0; i < 100; i++) {
             const star = document.createElement('div');
@@ -111,13 +107,24 @@
             star.style.animationDelay = Math.random() * 2 + 's';
             starsContainer.appendChild(star);
         }
+
+        // DOM元素
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
+        const startScreen = document.getElementById('startScreen');
+        const gameInfo = document.getElementById('gameInfo');
+        const controlsHint = document.getElementById('controlsHint');
+        const touchControls = document.getElementById('touchControls');
+        const fireBtn = document.getElementById('fireBtn');
+        const upgradeModal = document.getElementById('upgradeModal');
+        const gameOverDiv = document.getElementById('gameOver');
+
+        // 游戏状态
         let gameState = { running: false, paused: false, score: 0, gold: 0, level: 1, bossesDefeated: 0, killCount: 0, upgradeAvailable: false };
         let player = { x: 180, y: 480, width: 40, height: 50, speed: 5, hp: 100, maxHp: 100, invincible: 0, weaponLevel: 1, weaponType: 'normal', fireRate: 200, lastFire: 0, damage: 10, bulletSpeed: 8, penetration: 1, magnet: 0, doubleGold: 0 };
         const keys = {};
         let bullets = [], enemies = [], enemyBullets = [], powerups = [], particles = [], boss = null;
-        const weaponTypes = { normal: { name: '普通', icon: '🔹', color: '#00ffff', damage: 10 }, spread: { name: '散弹', icon: '🔸', color: '#ff00ff', damage: 8 }, laser: { name: '激光', icon: '💠', color: '#00ff00', damage: 15, piercing: true }, missile: { name: '导弹', icon: '🚀', color: '#ff6600', damage: 25, explosive: true } };
+        const weaponTypes = { normal: { name: '普通', color: '#00ffff', damage: 10 }, spread: { name: '散弹', color: '#ff00ff', damage: 8 }, laser: { name: '激光', color: '#00ff00', damage: 15 }, missile: { name: '导弹', color: '#ff6600', damage: 25 } };
         const upgrades = [
             { id: 'damage', name: '伤害提升', icon: '⚔️', desc: '伤害+30%', rarity: 'common', apply: () => { player.damage *= 1.3; } },
             { id: 'fireRate', name: '射速提升', icon: '⚡', desc: '射速+20%', rarity: 'common', apply: () => { player.fireRate *= 0.8; } },
@@ -134,6 +141,31 @@
         const enemyTypes = { basic: { hp: 30, speed: 2, score: 10, gold: 5, width: 30, height: 30, color: '#ff6666' }, fast: { hp: 15, speed: 4, score: 15, gold: 8, width: 25, height: 25, color: '#ffff66' }, tank: { hp: 80, speed: 1, score: 25, gold: 15, width: 40, height: 40, color: '#ff0000' }, shooter: { hp: 25, speed: 1.5, score: 20, gold: 10, width: 35, height: 35, color: '#ff00ff' } };
         const bossTypes = [{ name: '巨型战机', hp: 500, width: 100, height: 80, speed: 1, color: '#ff0000', pattern: 'circle' }, { name: '机械巨龙', hp: 800, width: 120, height: 60, speed: 0.8, color: '#ff4400', pattern: 'zigzag' }, { name: '外星母舰', hp: 1200, width: 150, height: 100, speed: 0.5, color: '#ff00ff', pattern: 'spread' }];
         let enemySpawnTimer = 0, enemySpawnRate = 60;
+
+        // 开始游戏
+        document.getElementById('startBtn').onclick = function() {
+            startScreen.classList.add('hidden');
+            gameInfo.classList.add('active');
+            canvas.classList.add('active');
+            controlsHint.classList.add('active');
+            touchControls.classList.add('active');
+            fireBtn.classList.add('active');
+            gameState = { running: true, paused: false, score: 0, gold: 0, level: 1, bossesDefeated: 0, killCount: 0, upgradeAvailable: false };
+            player = { x: 180, y: 480, width: 40, height: 50, speed: 5, hp: 100, maxHp: 100, invincible: 0, weaponLevel: 1, weaponType: 'normal', fireRate: 200, lastFire: 0, damage: 10, bulletSpeed: 8, penetration: 1, magnet: 0, doubleGold: 0 };
+            bullets = []; enemies = []; enemyBullets = []; powerups = []; particles = []; boss = null;
+            enemySpawnTimer = 0; enemySpawnRate = 60;
+            gameLoop();
+        };
+
+        // 重新开始
+        document.getElementById('restartBtn').onclick = function() {
+            gameOverDiv.classList.add('hidden');
+            gameState = { running: true, paused: false, score: 0, gold: 0, level: 1, bossesDefeated: 0, killCount: 0, upgradeAvailable: false };
+            player = { x: 180, y: 480, width: 40, height: 50, speed: 5, hp: 100, maxHp: 100, invincible: 0, weaponLevel: 1, weaponType: 'normal', fireRate: 200, lastFire: 0, damage: 10, bulletSpeed: 8, penetration: 1, magnet: 0, doubleGold: 0 };
+            bullets = []; enemies = []; enemyBullets = []; powerups = []; particles = []; boss = null;
+            enemySpawnTimer = 0; enemySpawnRate = 60;
+        };
+
         function spawnEnemy() {
             const types = ['basic', 'basic', 'basic', 'fast', 'fast', 'tank', 'shooter'];
             const type = types[Math.floor(Math.random() * types.length)];
@@ -156,14 +188,14 @@
             if (player.weaponType === 'spread') {
                 [-30, 0, 30].forEach(angle => {
                     const rad = (angle - 90) * Math.PI / 180;
-                    bullets.push({ x: player.x + player.width / 2, y: player.y, vx: Math.cos(rad) * player.bulletSpeed, vy: Math.sin(rad) * player.bulletSpeed, damage: player.damage, color: weapon.color, penetration: player.penetration, type: 'player' });
+                    bullets.push({ x: player.x + player.width / 2, y: player.y, vx: Math.cos(rad) * player.bulletSpeed, vy: Math.sin(rad) * player.bulletSpeed, damage: player.damage, color: weapon.color, penetration: player.penetration });
                 });
             } else if (player.weaponType === 'laser') {
-                bullets.push({ x: player.x + player.width / 2, y: player.y, vx: 0, vy: -player.bulletSpeed * 2, damage: player.damage * 1.5, color: weapon.color, penetration: 999, type: 'player', laser: true, width: 8 });
+                bullets.push({ x: player.x + player.width / 2, y: player.y, vx: 0, vy: -player.bulletSpeed * 2, damage: player.damage * 1.5, color: weapon.color, penetration: 999, laser: true, width: 8 });
             } else if (player.weaponType === 'missile') {
-                bullets.push({ x: player.x + player.width / 2, y: player.y, vx: 0, vy: -player.bulletSpeed * 0.8, damage: player.damage * 2, color: weapon.color, penetration: 1, type: 'player', missile: true });
+                bullets.push({ x: player.x + player.width / 2, y: player.y, vx: 0, vy: -player.bulletSpeed * 0.8, damage: player.damage * 2, color: weapon.color, penetration: 1, missile: true });
             } else {
-                bullets.push({ x: player.x + player.width / 2 - 3, y: player.y, vx: 0, vy: -player.bulletSpeed, damage: player.damage, color: weapon.color, penetration: player.penetration, type: 'player' });
+                bullets.push({ x: player.x + player.width / 2 - 3, y: player.y, vx: 0, vy: -player.bulletSpeed, damage: player.damage, color: weapon.color, penetration: player.penetration });
             }
         }
         function enemyShoot(enemy) {
@@ -174,10 +206,7 @@
             if (!boss) return;
             boss.shootTimer++;
             if (boss.pattern === 'circle' && boss.shootTimer % 30 === 0) {
-                for (let i = 0; i < 8; i++) {
-                    const angle = (i / 8) * Math.PI * 2;
-                    enemyBullets.push({ x: boss.x + boss.width / 2, y: boss.y + boss.height / 2, vx: Math.cos(angle) * 3, vy: Math.sin(angle) * 3, damage: 10, color: '#ff0000' });
-                }
+                for (let i = 0; i < 8; i++) { const angle = (i / 8) * Math.PI * 2; enemyBullets.push({ x: boss.x + boss.width / 2, y: boss.y + boss.height / 2, vx: Math.cos(angle) * 3, vy: Math.sin(angle) * 3, damage: 10, color: '#ff0000' }); }
             } else if (boss.pattern === 'zigzag') {
                 boss.moving += 0.05;
                 boss.x = canvas.width / 2 - boss.width / 2 + Math.sin(boss.moving) * 100;
@@ -193,13 +222,10 @@
             else if (rand < 0.18) powerups.push({ x, y, type: 'weapon', types: ['spread', 'laser', 'missile'], size: 20 });
         }
         function createExplosion(x, y, color, count = 10) {
-            for (let i = 0; i < count; i++) {
-                const angle = Math.random() * Math.PI * 2;
-                const speed = Math.random() * 3 + 1;
-                particles.push({ x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, life: 30, maxLife: 30, color, size: Math.random() * 4 + 2 });
-            }
+            for (let i = 0; i < count; i++) { const angle = Math.random() * Math.PI * 2; const speed = Math.random() * 3 + 1; particles.push({ x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, life: 30, maxLife: 30, color, size: Math.random() * 4 + 2 }); }
         }
         function checkCollision(a, b) { return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y; }
+
         function update() {
             if (!gameState.running || gameState.paused || gameState.upgradeAvailable) return;
             if (keys['ArrowLeft'] || keys['KeyA']) player.x -= player.speed;
@@ -260,20 +286,17 @@
                 if (p.y > canvas.height) powerups.splice(i, 1);
             });
             particles.forEach((p, i) => { p.x += p.vx; p.y += p.vy; p.life--; if (p.life <= 0) particles.splice(i, 1); });
-            // 关卡检测
             if (gameState.score > gameState.level * 500 && !boss) { gameState.level++; enemySpawnRate = Math.max(20, 60 - gameState.level * 3); if (gameState.level % 5 === 0) spawnBoss(); }
-            // 游戏结束检测
-            if (player.hp <= 0) { gameState.running = false; document.getElementById('gameOver').classList.add('show'); document.getElementById('finalScore').textContent = gameState.score; document.getElementById('finalLevel').textContent = gameState.level; document.getElementById('finalBosses').textContent = gameState.bossesDefeated; document.getElementById('finalGold').textContent = gameState.gold; }
-            // 更新UI
+            if (player.hp <= 0) { gameState.running = false; gameOverDiv.classList.remove('hidden'); document.getElementById('finalScore').textContent = gameState.score; document.getElementById('finalLevel').textContent = gameState.level; document.getElementById('finalBosses').textContent = gameState.bossesDefeated; document.getElementById('finalGold').textContent = gameState.gold; }
             document.getElementById('level').textContent = gameState.level;
             document.getElementById('score').textContent = gameState.score;
             document.getElementById('gold').textContent = Math.floor(gameState.gold);
             document.getElementById('hpFill').style.width = (player.hp / player.maxHp * 100) + '%';
         }
+
         function draw() {
             ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-            // 绘制玩家
             if (player.invincible % 4 < 2) {
                 ctx.fillStyle = '#00ffff';
                 ctx.beginPath();
@@ -283,54 +306,17 @@
                 ctx.lineTo(player.x, player.y + player.height);
                 ctx.closePath();
                 ctx.fill();
-                // 武器特效
                 ctx.fillStyle = weaponTypes[player.weaponType].color;
                 ctx.beginPath();
                 ctx.arc(player.x + player.width / 2, player.y + player.height / 2, 8, 0, Math.PI * 2);
                 ctx.fill();
             }
-            // 绘制子弹
-            bullets.forEach(bullet => {
-                if (bullet.laser) {
-                    ctx.fillStyle = bullet.color;
-                    ctx.fillRect(bullet.x - bullet.width / 2, bullet.y, bullet.width, 30);
-                } else {
-                    ctx.fillStyle = bullet.color;
-                    ctx.beginPath();
-                    ctx.arc(bullet.x, bullet.y, bullet.missile ? 6 : 4, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-            });
-            // 绘制敌人
-            enemies.forEach(enemy => {
-                ctx.fillStyle = enemy.color;
-                ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
-                // 血条
-                ctx.fillStyle = '#333';
-                ctx.fillRect(enemy.x, enemy.y - 5, enemy.width, 3);
-                ctx.fillStyle = '#0f0';
-                ctx.fillRect(enemy.x, enemy.y - 5, enemy.width * (enemy.hp / enemy.maxHp), 3);
-            });
-            // 绘制BOSS
-            if (boss) {
-                ctx.fillStyle = boss.color;
-                ctx.fillRect(boss.x, boss.y, boss.width, boss.height);
-                ctx.fillStyle = '#333';
-                ctx.fillRect(boss.x, boss.y - 10, boss.width, 5);
-                ctx.fillStyle = '#f00';
-                ctx.fillRect(boss.x, boss.y - 10, boss.width * (boss.hp / boss.maxHp), 5);
-            }
-            // 绘制敌人子弹
+            bullets.forEach(bullet => { if (bullet.laser) { ctx.fillStyle = bullet.color; ctx.fillRect(bullet.x - bullet.width / 2, bullet.y, bullet.width, 30); } else { ctx.fillStyle = bullet.color; ctx.beginPath(); ctx.arc(bullet.x, bullet.y, bullet.missile ? 6 : 4, 0, Math.PI * 2); ctx.fill(); } });
+            enemies.forEach(enemy => { ctx.fillStyle = enemy.color; ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height); ctx.fillStyle = '#333'; ctx.fillRect(enemy.x, enemy.y - 5, enemy.width, 3); ctx.fillStyle = '#0f0'; ctx.fillRect(enemy.x, enemy.y - 5, enemy.width * (enemy.hp / enemy.maxHp), 3); });
+            if (boss) { ctx.fillStyle = boss.color; ctx.fillRect(boss.x, boss.y, boss.width, boss.height); ctx.fillStyle = '#333'; ctx.fillRect(boss.x, boss.y - 10, boss.width, 5); ctx.fillStyle = '#f00'; ctx.fillRect(boss.x, boss.y - 10, boss.width * (boss.hp / boss.maxHp), 5); }
             enemyBullets.forEach(bullet => { ctx.fillStyle = bullet.color; ctx.beginPath(); ctx.arc(bullet.x, bullet.y, 5, 0, Math.PI * 2); ctx.fill(); });
-            // 绘制道具
-            powerups.forEach(p => {
-                ctx.fillStyle = p.type === 'gold' ? '#ffd700' : p.type === 'health' ? '#00ff00' : '#ff00ff';
-                ctx.beginPath(); ctx.arc(p.x, p.y, p.size / 2, 0, Math.PI * 2); ctx.fill();
-                ctx.fillStyle = '#000'; ctx.font = '10px Arial'; ctx.textAlign = 'center';
-                ctx.fillText(p.type === 'gold' ? '💰' : p.type === 'health' ? '❤️' : '🔫', p.x, p.y + 4);
-            });
-            // 绘制粒子
-            particles.forEach(p => { ctx.fillStyle = p.color; ctx.globalAlpha = p.life / p.maxLife; ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1; });
+            powerups.forEach(p => { ctx.fillStyle = p.type === 'gold' ? '#ffd700' : p.type === 'health' ? '#00ff00' : '#ff00ff'; ctx.beginPath(); ctx.arc(p.x, p.y, p.size / 2, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = '#000'; ctx.font = '10px Arial'; ctx.textAlign = 'center'; ctx.fillText(p.type === 'gold' ? '💰' : p.type === 'health' ? '❤️' : '🔫', p.x, p.y + 4); });
+            particles.forEach(p => { ctx.fillStyle = p.color; ctx.globalAlpha = p.life / p.maxLife; ctx.beginPath(); ctx.arc(p.x, p.y, p.size,0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1; });
         }
         function gameLoop() { if (gameState.running) { update(); draw(); } requestAnimationFrame(gameLoop); }
         function showUpgrade() {
@@ -340,40 +326,27 @@
             const shuffled = [...upgrades].sort(() => Math.random() - 0.5).slice(0, 3);
             shuffled.forEach(u => {
                 const card = document.createElement('div');
-                card.className = `upgrade-card ${u.rarity}`;
-                card.innerHTML = `<div class="upgrade-icon">${u.icon}</div><div class="upgrade-name">${u.name}</div><div class="upgrade-desc">${u.desc}</div>`;
-                card.onclick = () => { u.apply(); gameState.upgradeAvailable = false; document.getElementById('upgradeModal').classList.remove('show'); };
+                card.className = 'upgrade-card ' + u.rarity;
+                card.innerHTML = '<div class="upgrade-icon">' + u.icon + '</div><div class="upgrade-name">' + u.name + '</div><div class="upgrade-desc">' + u.desc + '</div>';
+                card.onclick = function() { u.apply(); gameState.upgradeAvailable = false; upgradeModal.classList.add('hidden'); };
                 options.appendChild(card);
             });
-            document.getElementById('upgradeModal').classList.add('show');
+            upgradeModal.classList.remove('hidden');
         }
-        function startGame() {
-            document.getElementById('startScreen').classList.add('hidden');
-            gameState = { running: true, paused: false, score: 0, gold: 0, level: 1, bossesDefeated: 0, killCount: 0, upgradeAvailable: false };
-            player = { x: 180, y: 480, width: 40, height: 50, speed: 5, hp: 100, maxHp: 100, invincible: 0, weaponLevel: 1, weaponType: 'normal', fireRate: 200, lastFire: 0, damage: 10, bulletSpeed: 8, penetration: 1, magnet: 0, doubleGold: 0 };
-            bullets = []; enemies = []; enemyBullets = []; powerups = []; particles = []; boss = null;
-            enemySpawnTimer = 0; enemySpawnRate = 60;
-            gameLoop();
-        }
-        function restartGame() {
-            document.getElementById('gameOver').classList.remove('show');
-            startGame();
-        }
-        document.addEventListener('keydown', e => { keys[e.code] = true; if (e.code === 'Space') e.preventDefault(); });
-        document.addEventListener('keyup', e => keys[e.code] = false);
+        document.addEventListener('keydown', function(e) { keys[e.code] = true; if (e.code === 'Space') e.preventDefault(); });
+        document.addEventListener('keyup', function(e) { keys[e.code] = false; });
         
         // 触摸控制
-        const touchControls = document.getElementById('touchControls');
         const joystickKnob = document.getElementById('joystickKnob');
         let touchStartX = 0, touchStartY = 0;
         
-        touchControls.addEventListener('touchstart', e => {
+        touchControls.addEventListener('touchstart', function(e) {
             const touch = e.touches[0];
             touchStartX = touch.clientX;
             touchStartY = touch.clientY;
         });
         
-        touchControls.addEventListener('touchmove', e => {
+        touchControls.addEventListener('touchmove', function(e) {
             e.preventDefault();
             const touch = e.touches[0];
             const dx = touch.clientX - touchStartX;
@@ -381,17 +354,20 @@
             const maxDist = 35;
             const dist = Math.min(Math.hypot(dx, dy), maxDist);
             const angle = Math.atan2(dy, dx);
-            joystickKnob.style.transform = `translate(calc(-50% + ${Math.cos(angle) * dist}px), calc(-50% + ${Math.sin(angle) * dist}px))`;
+            joystickKnob.style.transform = 'translate(calc(-50% + ' + (Math.cos(angle) * dist) + 'px), calc(-50% + ' + (Math.sin(angle) * dist) + 'px))';
             keys['ArrowLeft'] = dx < -15;
             keys['ArrowRight'] = dx > 15;
             keys['ArrowUp'] = dy < -15;
             keys['ArrowDown'] = dy > 15;
         });
         
-        touchControls.addEventListener('touchend', () => {
+        touchControls.addEventListener('touchend', function() {
             joystickKnob.style.transform = 'translate(-50%, -50%)';
             keys['ArrowLeft'] = keys['ArrowRight'] = keys['ArrowUp'] = keys['ArrowDown'] = false;
         });
         
-        document.getElementById('fireBtn').addEventListener('touchstart', e => { e.preventDefault(); keys['Space'] = true; });
-        document.getElementById('fireBtn').addEventListener('touchend', e => { e.preventDefault(); keys['Space'] = false; });
+        fireBtn.addEventListener('touchstart', function(e) { e.preventDefault(); keys['Space'] = true; });
+        fireBtn.addEventListener('touchend', function(e) { e.preventDefault(); keys['Space'] = false; });
+    </script>
+</body>
+</html>
