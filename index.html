@@ -2,372 +2,415 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>星际战机 - 肉鸽版</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { display: flex; flex-direction: column; align-items: center; min-height: 100vh; background: linear-gradient(180deg, #0a0a1a 0%, #1a1a3a 50%, #0d0d2b 100%); font-family: 'Segoe UI', sans-serif; overflow: hidden; touch-action: none; }
-        .stars { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
-        .star { position: absolute; background: white; border-radius: 50%; animation: twinkle 2s infinite; }
-        @keyframes twinkle { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
-        h1 { color: #00ffff; margin: 10px 0; text-shadow: 0 0 20px #00ffff; font-size: 20px; z-index: 1; }
-        .game-info { display: none; justify-content: space-between; width: 95%; max-width: 480px; color: #fff; font-size: 12px; margin-bottom: 5px; z-index: 1; }
-        .game-info.active { display: flex; }
-        .game-info span { background: rgba(0, 255, 255, 0.1); padding: 5px 10px; border-radius: 5px; }
-        .hp-bar { width: 80px; height: 10px; background: rgba(255, 0, 0, 0.3); border-radius: 5px; overflow: hidden; }
-        .hp-fill { height: 100%; background: linear-gradient(90deg, #ff4444, #ff8844); transition: width 0.3s; }
-        #gameCanvas { display: none; border: 2px solid rgba(0, 255, 255, 0.5); border-radius: 10px; background: rgba(0, 0, 0, 0.5); z-index: 1; }
-        #gameCanvas.active { display: block; }
-        .controls-hint { display: none; color: rgba(255, 255, 255, 0.6); font-size: 11px; margin-top: 8px; text-align: center; z-index: 1; }
-        .controls-hint.active { display: block; }
-        .touch-controls { display: none; position: fixed; bottom: 20px; left: 20px; width: 120px; height: 120px; background: rgba(255, 255, 255, 0.1); border-radius: 50%; border: 2px solid rgba(0, 255, 255, 0.3); z-index: 100; }
-        .touch-controls.active { display: block; }
-        .joystick-knob { position: absolute; width: 50px; height: 50px; background: radial-gradient(circle, rgba(0, 255, 255, 0.8), rgba(0, 200, 255, 0.5)); border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%, -50%); }
-        .fire-btn { display: none; position: fixed; bottom: 40px; right: 30px; width: 70px; height: 70px; background: radial-gradient(circle, #ff4444, #ff0000); border-radius: 50%; color: white; font-size: 14px; font-weight: bold; justify-content: center; align-items: center; z-index: 100; }
-        .fire-btn.active { display: flex; }
-        @media (max-width: 600px) { .touch-controls.active { display: block; } }
-        .upgrade-modal, .game-over, .start-screen { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 200; justify-content: center; align-items: center; flex-direction: column; background: rgba(0, 0, 0, 0.9); }
-        .start-screen { background: linear-gradient(180deg, #0a0a1a, #1a1a3a); z-index: 400; }
-        .start-screen.hidden, .upgrade-modal.hidden, .game-over.hidden { display: none; }
-        .upgrade-modal h2 { color: #ffd700; font-size: 24px; margin-bottom: 20px; animation: pulse 1s infinite; }
-        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
-        .upgrade-options { display: flex; gap: 15px; flex-wrap: wrap; justify-content: center; max-width: 400px; }
-        .upgrade-card { width: 110px; padding: 12px; background: linear-gradient(135deg, #1a1a3a, #2a2a5a); border: 2px solid rgba(0, 255, 255, 0.5); border-radius: 15px; text-align: center; cursor: pointer; transition: all 0.3s; }
-        .upgrade-card:hover { transform: translateY(-5px); box-shadow: 0 10px 30px rgba(0, 255, 255, 0.3); }
-        .upgrade-icon { font-size: 28px; margin-bottom: 8px; }
-        .upgrade-name { color: #00ffff; font-size: 13px; font-weight: bold; margin-bottom: 5px; }
-        .upgrade-desc { color: rgba(255, 255, 255, 0.7); font-size: 10px; }
-        .upgrade-card.rare { border-color: #ffd700; }
-        .upgrade-card.epic { border-color: #ff00ff; }
-        .upgrade-card.legendary { border-color: #ff4400; }
-        .game-over h2 { color: #ff4444; font-size: 36px; margin-bottom: 20px; }
-        .game-over .stats { color: white; text-align: center; margin-bottom: 30px; }
-        .game-over .stats p { font-size: 18px; margin: 10px 0; }
-        .game-over .gold { color: #ffd700; }
-        .btn { padding: 15px 40px; font-size: 18px; background: linear-gradient(135deg, #00ffff, #0088ff); color: #000; border: none; border-radius: 30px; cursor: pointer; font-weight: bold; margin: 10px; transition: all 0.3s; }
-        .btn:hover { transform: scale(1.1); box-shadow: 0 0 30px rgba(0, 255, 255, 0.5); }
-        .start-screen h1 { font-size: 40px; margin-bottom: 10px; }
-        .start-screen .subtitle { color: rgba(255, 255, 255, 0.6); margin-bottom: 40px; }
-        .start-screen .features { color: rgba(255, 255, 255, 0.8); font-size: 14px; text-align: center; margin-bottom: 40px; line-height: 2; }
-        .start-screen .gold-text { color: #ffd700; }
-        .boss-warning { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #ff0000; font-size: 32px; font-weight: bold; animation: blink 0.5s infinite; z-index: 150; }
-        .boss-warning.show { display: block; }
-        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            display: flex; flex-direction: column; align-items: center; 
+            min-height: 100vh; background: linear-gradient(180deg, #0a0a1a, #1a1a3a); 
+            font-family: sans-serif; overflow: hidden; 
+        }
+        h1 { color: #00ffff; margin: 10px; text-shadow: 0 0 20px #00ffff; }
+        
+        #gameCanvas { 
+            display: none; border: 2px solid #00ffff; border-radius: 10px; 
+            background: #000; margin-top: 10px;
+        }
+        
+        .ui-panel { 
+            display: none; width: 400px; justify-content: space-between; 
+            color: #fff; padding: 5px; font-size: 14px;
+        }
+        
+        .hp-bar { 
+            width: 100px; height: 15px; background: #333; border-radius: 5px; overflow: hidden; 
+        }
+        .hp-fill { height: 100%; background: linear-gradient(90deg, #f00, #f80); width: 100%; }
+        
+        .btn-start { 
+            padding: 20px 50px; font-size: 24px; background: linear-gradient(135deg, #0ff, #08f); 
+            color: #000; border: none; border-radius: 30px; cursor: pointer; font-weight: bold;
+            margin-top: 100px;
+        }
+        .btn-start:hover { transform: scale(1.1); box-shadow: 0 0 30px #0ff; }
+        
+        .menu { display: flex; flex-direction: column; align-items: center; }
+        .menu h2 { color: #ffd700; font-size: 32px; margin-bottom: 20px; }
+        .menu p { color: #ccc; margin: 10px; }
+        
+        #upgradeMenu, #gameOverMenu { display: none; }
+        
+        .upgrade-cards { display: flex; gap: 15px; flex-wrap: wrap; justify-content: center; }
+        .card { 
+            width: 100px; padding: 15px; background: linear-gradient(135deg, #224, #446); 
+            border: 2px solid #0ff; border-radius: 10px; text-align: center; cursor: pointer;
+        }
+        .card:hover { transform: translateY(-5px); box-shadow: 0 5px 20px rgba(0,255,255,0.5); }
+        .card.rare { border-color: #ffd700; }
+        .card.epic { border-color: #f0f; }
+        .card.legendary { border-color: #f80; }
+        .card-icon { font-size: 30px; }
+        .card-name { color: #0ff; font-size: 14px; margin: 5px 0; }
+        .card-desc { color: #888; font-size: 10px; }
+        
+        .touch-area { display: none; position: fixed; bottom: 20px; width: 100%; }
+        @media (max-width: 500px) { .touch-area { display: flex; justify-content: space-between; padding: 0 20px; } }
+        .joystick { width: 100px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 50%; border: 2px solid #0ff; position: relative; }
+        .joystick-knob { width: 40px; height: 40px; background: #0ff; border-radius: 50%; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+        .fire-btn { width: 80px; height: 80px; background: radial-gradient(#f00, #800); border-radius: 50%; border: 3px solid #f88; color: #fff; font-size: 18px; display: flex; align-items: center; justify-content: center; }
+        
+        .hint { color: #888; font-size: 12px; margin-top: 10px; }
     </style>
 </head>
 <body>
-    <div class="stars" id="stars"></div>
-    <h1>🚀 星际战机 - 肉鸽版</h1>
-    <div class="game-info" id="gameInfo">
-        <span>关卡: <span id="level">1</span></span>
-        <span>分数: <span id="score">0</span></span>
-        <span class="gold">💰: <span id="gold">0</span></span>
+    <h1>🚀 星际战机</h1>
+    
+    <!-- 主菜单 -->
+    <div class="menu" id="mainMenu">
+        <h2>🚀 星际战机</h2>
+        <p>🎮 三种武器：散弹、激光、导弹</p>
+        <p>💎 击毁敌人获得升级</p>
+        <p>👹 每5关遇到BOSS</p>
+        <button class="btn-start" onclick="startGame()">开始游戏</button>
+    </div>
+    
+    <!-- 游戏界面 -->
+    <div class="ui-panel" id="uiPanel">
+        <span>关卡: <span id="levelDisplay">1</span></span>
+        <span>分数: <span id="scoreDisplay">0</span></span>
+        <span>💰: <span id="goldDisplay">0</span></span>
         <div class="hp-bar"><div class="hp-fill" id="hpFill"></div></div>
     </div>
-    <canvas id="gameCanvas" width="400" height="550"></canvas>
-    <div class="controls-hint" id="controlsHint">电脑：WASD/方向键移动 | 空格/J射击</div>
-    <div class="touch-controls" id="touchControls"><div class="joystick-knob" id="joystickKnob"></div></div>
-    <div class="fire-btn" id="fireBtn">开火</div>
-    <div class="start-screen" id="startScreen">
-        <h1>🚀 星际战机</h1>
-        <p class="subtitle">肉鸽版</p>
-        <div class="features">
-            <p>🎮 <span class="gold-text">三种武器</span>：散弹、激光、导弹</p>
-            <p>💎 <span class="gold-text">升级系统</span>：击毁敌人掉落升级</p>
-            <p>👹 <span class="gold-text">BOSS战</span>：每5关遇到强力BOSS</p>
-            <p>✨ <span class="gold-text">roguelike</span>：每次体验都不同</p>
+    
+    <canvas id="gameCanvas" width="400" height="500"></canvas>
+    
+    <div class="hint" id="hint">电脑：WASD/方向键移动 | 空格/J射击</div>
+    
+    <!-- 触摸控制 -->
+    <div class="touch-area">
+        <div class="joystick" id="joystick">
+            <div class="joystick-knob" id="joystickKnob"></div>
         </div>
-        <button class="btn" id="startBtn">开始游戏</button>
+        <div class="fire-btn" id="fireBtn">开火</div>
     </div>
-    <div class="upgrade-modal hidden" id="upgradeModal">
+    
+    <!-- 升级菜单 -->
+    <div class="menu" id="upgradeMenu">
         <h2>⚡ 选择升级!</h2>
-        <div class="upgrade-options" id="upgradeOptions"></div>
+        <div class="upgrade-cards" id="upgradeCards"></div>
     </div>
-    <div class="boss-warning" id="bossWarning">⚠️ BOSS来袭! ⚠️</div>
-    <div class="game-over hidden" id="gameOver">
+    
+    <!-- 游戏结束 -->
+    <div class="menu" id="gameOverMenu">
         <h2>💀 游戏结束</h2>
-        <div class="stats">
-            <p>最终得分: <span id="finalScore">0</span></p>
-            <p>通过关卡: <span id="finalLevel">0</span></p>
-            <p>击败BOSS: <span id="finalBosses">0</span></p>
-            <p class="gold">💰 金币: <span id="finalGold">0</span></p>
-        </div>
-        <button class="btn" id="restartBtn">再来一局</button>
+        <p>得分: <span id="finalScore">0</span></p>
+        <p>关卡: <span id="finalLevel">0</span></p>
+        <p>击败BOSS: <span id="finalBosses">0</span></p>
+        <button class="btn-start" onclick="startGame()">再来一局</button>
     </div>
+
     <script>
-        // 初始化星空
-        const starsContainer = document.getElementById('stars');
-        for (let i = 0; i < 100; i++) {
-            const star = document.createElement('div');
-            star.className = 'star';
-            star.style.left = Math.random() * 100 + '%';
-            star.style.top = Math.random() * 100 + '%';
-            star.style.width = Math.random() * 2 + 1 + 'px';
-            star.style.height = star.style.width;
-            star.style.animationDelay = Math.random() * 2 + 's';
-            starsContainer.appendChild(star);
+    // 游戏变量
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    let gameRunning = false;
+    let score = 0, gold = 0, level = 1, bossesDefeated = 0;
+    let player = { x: 180, y: 420, w: 40, h: 50, hp: 100, maxHp: 100, speed: 5, weapon: 'normal', damage: 10, fireRate: 200, lastFire: 0, invincible: 0 };
+    let bullets = [], enemies = [], enemyBullets = [], powerups = [], particles = [], boss = null;
+    let keys = {};
+    let spawnTimer = 0, spawnRate = 60;
+    
+    // 配置
+    const weapons = { normal: '#0ff', spread: '#f0f', laser: '#0f0', missile: '#f80' };
+    const upgrades = [
+        { id: 'damage', name: '伤害+30%', icon: '⚔️', desc: '伤害提升', rarity: 'common', apply: () => player.damage *= 1.3 },
+        { id: 'fireRate', name: '射速+20%', icon: '⚡', desc: '射速提升', rarity: 'common', apply: () => player.fireRate *= 0.8 },
+        { id: 'speed', name: '速度+25%', icon: '👟', desc: '移动加速', rarity: 'common', apply: () => player.speed *= 1.25 },
+        { id: 'heal', name: '回血50%', icon: '❤️', desc: '恢复生命', rarity: 'common', apply: () => player.hp = Math.min(player.hp + player.maxHp * 0.5, player.maxHp) },
+        { id: 'spread', name: '散弹', icon: '🔸', desc: '散弹武器', rarity: 'rare', apply: () => player.weapon = 'spread' },
+        { id: 'laser', name: '激光', icon: '💠', desc: '穿透激光', rarity: 'epic', apply: () => player.weapon = 'laser' },
+        { id: 'missile', name: '导弹', icon: '🚀', desc: '追踪导弹', rarity: 'legendary', apply: () => player.weapon = 'missile' }
+    ];
+    const enemyTypes = [
+        { hp: 30, speed: 2, score: 10, gold: 5, w: 30, h: 30, c: '#f66' },
+        { hp: 15, speed: 4, score: 15, gold: 8, w: 25, h: 25, c: '#ff6' },
+        { hp: 80, speed: 1, score: 25, gold: 15, w: 40, h: 40, c: '#f00' }
+    ];
+    const bossTypes = [
+        { hp: 500, w: 100, h: 80, c: '#f00', pattern: 'circle' },
+        { hp: 800, w: 120, h: 60, c: '#f40', pattern: 'zigzag' }
+    ];
+    
+    // 开始游戏
+    function startGame() {
+        console.log('Starting game...');
+        document.getElementById('mainMenu').style.display = 'none';
+        document.getElementById('upgradeMenu').style.display = 'none';
+        document.getElementById('gameOverMenu').style.display = 'none';
+        document.getElementById('gameCanvas').style.display = 'block';
+        document.getElementById('uiPanel').style.display = 'flex';
+        document.getElementById('hint').style.display = 'block';
+        
+        score = 0; gold = 0; level = 1; bossesDefeated = 0;
+        player = { x: 180, y: 420, w: 40, h: 50, hp: 100, maxHp: 100, speed: 5, weapon: 'normal', damage: 10, fireRate: 200, lastFire: 0, invincible: 0 };
+        bullets = []; enemies = []; enemyBullets = []; powerups = []; particles = []; boss = null;
+        spawnTimer = 0; spawnRate = 60;
+        gameRunning = true;
+        
+        updateUI();
+        requestAnimationFrame(gameLoop);
+    }
+    
+    // 更新UI
+    function updateUI() {
+        document.getElementById('levelDisplay').textContent = level;
+        document.getElementById('scoreDisplay').textContent = score;
+        document.getElementById('goldDisplay').textContent = gold;
+        document.getElementById('hpFill').style.width = (player.hp / player.maxHp * 100) + '%';
+    }
+    
+    // 射击
+    function shoot() {
+        const now = Date.now();
+        if (now - player.lastFire < player.fireRate) return;
+        player.lastFire = now;
+        
+        if (player.weapon === 'spread') {
+            [-30, 0, 30].forEach(a => {
+                const r = (a - 90) * Math.PI / 180;
+                bullets.push({ x: player.x + player.w/2, y: player.y, vx: Math.cos(r) * 8, vy: Math.sin(r) * 8, c: weapons.spread });
+            });
+        } else if (player.weapon === 'laser') {
+            bullets.push({ x: player.x + player.w/2, y: player.y, vx: 0, vy: -15, c: weapons.laser, laser: true });
+        } else if (player.weapon === 'missile') {
+            bullets.push({ x: player.x + player.w/2, y: player.y, vx: 0, vy: -6, c: weapons.missile, missile: true });
+        } else {
+            bullets.push({ x: player.x + player.w/2, y: player.y, vx: 0, vy: -8, c: weapons.normal });
         }
-
-        // DOM元素
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        const startScreen = document.getElementById('startScreen');
-        const gameInfo = document.getElementById('gameInfo');
-        const controlsHint = document.getElementById('controlsHint');
-        const touchControls = document.getElementById('touchControls');
-        const fireBtn = document.getElementById('fireBtn');
-        const upgradeModal = document.getElementById('upgradeModal');
-        const gameOverDiv = document.getElementById('gameOver');
-
-        // 游戏状态
-        let gameState = { running: false, paused: false, score: 0, gold: 0, level: 1, bossesDefeated: 0, killCount: 0, upgradeAvailable: false };
-        let player = { x: 180, y: 480, width: 40, height: 50, speed: 5, hp: 100, maxHp: 100, invincible: 0, weaponLevel: 1, weaponType: 'normal', fireRate: 200, lastFire: 0, damage: 10, bulletSpeed: 8, penetration: 1, magnet: 0, doubleGold: 0 };
-        const keys = {};
-        let bullets = [], enemies = [], enemyBullets = [], powerups = [], particles = [], boss = null;
-        const weaponTypes = { normal: { name: '普通', color: '#00ffff', damage: 10 }, spread: { name: '散弹', color: '#ff00ff', damage: 8 }, laser: { name: '激光', color: '#00ff00', damage: 15 }, missile: { name: '导弹', color: '#ff6600', damage: 25 } };
-        const upgrades = [
-            { id: 'damage', name: '伤害提升', icon: '⚔️', desc: '伤害+30%', rarity: 'common', apply: () => { player.damage *= 1.3; } },
-            { id: 'fireRate', name: '射速提升', icon: '⚡', desc: '射速+20%', rarity: 'common', apply: () => { player.fireRate *= 0.8; } },
-            { id: 'speed', name: '移动加速', icon: '👟', desc: '速度+25%', rarity: 'common', apply: () => { player.speed *= 1.25; } },
-            { id: 'hp', name: '生命提升', icon: '❤️', desc: '最大生命+50%', rarity: 'common', apply: () => { player.maxHp *= 1.5; player.hp = Math.min(player.hp + 50, player.maxHp); } },
-            { id: 'heal', name: '恢复生命', icon: '💚', desc: '恢复50%生命', rarity: 'common', apply: () => { player.hp = Math.min(player.hp + player.maxHp * 0.5, player.maxHp); } },
-            { id: 'spread', name: '散弹武器', icon: '🔸', desc: '发射散弹', rarity: 'rare', apply: () => { player.weaponType = 'spread'; } },
-            { id: 'laser', name: '激光武器', icon: '💠', desc: '穿透激光', rarity: 'epic', apply: () => { player.weaponType = 'laser'; } },
-            { id: 'missile', name: '导弹武器', icon: '🚀', desc: '爆炸导弹', rarity: 'legendary', apply: () => { player.weaponType = 'missile'; } },
-            { id: 'penetration', name: '穿透弹', icon: '🎯', desc: '子弹穿透+1', rarity: 'rare', apply: () => { player.penetration += 1; } },
-            { id: 'magnet', name: '磁铁', icon: '🧲', desc: '自动吸金币', rarity: 'rare', apply: () => { player.magnet += 1; } },
-            { id: 'doubleGold', name: '双倍金币', icon: '💰', desc: '金币+100%', rarity: 'rare', apply: () => { player.doubleGold += 1; } }
-        ];
-        const enemyTypes = { basic: { hp: 30, speed: 2, score: 10, gold: 5, width: 30, height: 30, color: '#ff6666' }, fast: { hp: 15, speed: 4, score: 15, gold: 8, width: 25, height: 25, color: '#ffff66' }, tank: { hp: 80, speed: 1, score: 25, gold: 15, width: 40, height: 40, color: '#ff0000' }, shooter: { hp: 25, speed: 1.5, score: 20, gold: 10, width: 35, height: 35, color: '#ff00ff' } };
-        const bossTypes = [{ name: '巨型战机', hp: 500, width: 100, height: 80, speed: 1, color: '#ff0000', pattern: 'circle' }, { name: '机械巨龙', hp: 800, width: 120, height: 60, speed: 0.8, color: '#ff4400', pattern: 'zigzag' }, { name: '外星母舰', hp: 1200, width: 150, height: 100, speed: 0.5, color: '#ff00ff', pattern: 'spread' }];
-        let enemySpawnTimer = 0, enemySpawnRate = 60;
-
-        // 开始游戏
-        document.getElementById('startBtn').onclick = function() {
-            startScreen.classList.add('hidden');
-            gameInfo.classList.add('active');
-            canvas.classList.add('active');
-            controlsHint.classList.add('active');
-            touchControls.classList.add('active');
-            fireBtn.classList.add('active');
-            gameState = { running: true, paused: false, score: 0, gold: 0, level: 1, bossesDefeated: 0, killCount: 0, upgradeAvailable: false };
-            player = { x: 180, y: 480, width: 40, height: 50, speed: 5, hp: 100, maxHp: 100, invincible: 0, weaponLevel: 1, weaponType: 'normal', fireRate: 200, lastFire: 0, damage: 10, bulletSpeed: 8, penetration: 1, magnet: 0, doubleGold: 0 };
-            bullets = []; enemies = []; enemyBullets = []; powerups = []; particles = []; boss = null;
-            enemySpawnTimer = 0; enemySpawnRate = 60;
-            gameLoop();
-        };
-
-        // 重新开始
-        document.getElementById('restartBtn').onclick = function() {
-            gameOverDiv.classList.add('hidden');
-            gameState = { running: true, paused: false, score: 0, gold: 0, level: 1, bossesDefeated: 0, killCount: 0, upgradeAvailable: false };
-            player = { x: 180, y: 480, width: 40, height: 50, speed: 5, hp: 100, maxHp: 100, invincible: 0, weaponLevel: 1, weaponType: 'normal', fireRate: 200, lastFire: 0, damage: 10, bulletSpeed: 8, penetration: 1, magnet: 0, doubleGold: 0 };
-            bullets = []; enemies = []; enemyBullets = []; powerups = []; particles = []; boss = null;
-            enemySpawnTimer = 0; enemySpawnRate = 60;
-        };
-
-        function spawnEnemy() {
-            const types = ['basic', 'basic', 'basic', 'fast', 'fast', 'tank', 'shooter'];
-            const type = types[Math.floor(Math.random() * types.length)];
-            const config = enemyTypes[type];
-            enemies.push({ x: Math.random() * (canvas.width - config.width), y: -config.height, ...config, type, maxHp: config.hp, shootTimer: 0 });
+    }
+    
+    // 生成敌人
+    function spawnEnemy() {
+        const type = enemyTypes[Math.floor(Math.random() * enemyTypes.length)];
+        enemies.push({ x: Math.random() * (canvas.width - type.w), y: -type.h, ...type, maxHp: type.hp });
+    }
+    
+    // 掉落道具
+    function dropPowerup(x, y) {
+        if (Math.random() < 0.1) powerups.push({ x, y, type: 'gold', v: 10 });
+        else if (Math.random() < 0.15) powerups.push({ x, y, type: 'heal', v: 20 });
+    }
+    
+    // 爆炸效果
+    function explode(x, y, c) {
+        for (let i = 0; i < 10; i++) {
+            const a = Math.random() * Math.PI * 2, s = Math.random() * 3 + 1;
+            particles.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, c, life: 30 });
         }
-        function spawnBoss() {
-            const bossIndex = Math.min(Math.floor((gameState.level - 1) / 2), bossTypes.length - 1);
-            const config = bossTypes[bossIndex];
-            boss = { x: canvas.width / 2 - config.width / 2, y: -config.height, ...config, maxHp: config.hp * (1 + (gameState.level - 1) * 0.3), phase: 0, shootTimer: 0, moving: 0 };
-            boss.hp = boss.maxHp;
-            document.getElementById('bossWarning').classList.add('show');
-            setTimeout(() => document.getElementById('bossWarning').classList.remove('show'), 2000);
+    }
+    
+    // 碰撞检测
+    function hit(a, b) {
+        return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+    }
+    
+    // 游戏循环
+    function gameLoop() {
+        if (!gameRunning) return;
+        
+        // 移动
+        if (keys['ArrowLeft'] || keys['KeyA']) player.x -= player.speed;
+        if (keys['ArrowRight'] || keys['KeyD']) player.x += player.speed;
+        if (keys['ArrowUp'] || keys['KeyW']) player.y -= player.speed;
+        if (keys['ArrowDown'] || keys['KeyS']) player.y += player.speed;
+        player.x = Math.max(0, Math.min(canvas.width - player.w, player.x));
+        player.y = Math.max(0, Math.min(canvas.height - player.h, player.y));
+        
+        if (keys['Space'] || keys['KeyJ']) shoot();
+        if (player.invincible > 0) player.invincible--;
+        
+        // 生成敌人
+        spawnTimer++;
+        if (spawnTimer >= spawnRate && !boss) {
+            spawnEnemy();
+            spawnTimer = 0;
+            spawnRate = Math.max(20, 60 - level * 3);
         }
-        function playerShoot() {
-            const now = Date.now();
-            if (now - player.lastFire < player.fireRate) return;
-            player.lastFire = now;
-            const weapon = weaponTypes[player.weaponType];
-            if (player.weaponType === 'spread') {
-                [-30, 0, 30].forEach(angle => {
-                    const rad = (angle - 90) * Math.PI / 180;
-                    bullets.push({ x: player.x + player.width / 2, y: player.y, vx: Math.cos(rad) * player.bulletSpeed, vy: Math.sin(rad) * player.bulletSpeed, damage: player.damage, color: weapon.color, penetration: player.penetration });
-                });
-            } else if (player.weaponType === 'laser') {
-                bullets.push({ x: player.x + player.width / 2, y: player.y, vx: 0, vy: -player.bulletSpeed * 2, damage: player.damage * 1.5, color: weapon.color, penetration: 999, laser: true, width: 8 });
-            } else if (player.weaponType === 'missile') {
-                bullets.push({ x: player.x + player.width / 2, y: player.y, vx: 0, vy: -player.bulletSpeed * 0.8, damage: player.damage * 2, color: weapon.color, penetration: 1, missile: true });
-            } else {
-                bullets.push({ x: player.x + player.width / 2 - 3, y: player.y, vx: 0, vy: -player.bulletSpeed, damage: player.damage, color: weapon.color, penetration: player.penetration });
+        
+        // 更新子弹
+        bullets.forEach((b, i) => {
+            b.x += b.vx; b.y += b.vy;
+            if (b.y < -20) bullets.splice(i, 1);
+        });
+        
+        // 更新敌人
+        enemies.forEach((e, i) => {
+            e.y += e.speed;
+            if (e.y > canvas.height) enemies.splice(i, 1);
+            else if (hit(e, player) && player.invincible <= 0) {
+                player.hp -= 20; player.invincible = 60; explode(player.x + player.w/2, player.y + player.h/2, '#f00');
             }
-        }
-        function enemyShoot(enemy) {
-            const angle = Math.atan2(player.y - enemy.y, player.x - enemy.x);
-            enemyBullets.push({ x: enemy.x + enemy.width / 2, y: enemy.y + enemy.height, vx: Math.cos(angle) * 3, vy: Math.sin(angle) * 3, damage: 10, color: '#ff0000' });
-        }
-        function bossAttack() {
-            if (!boss) return;
-            boss.shootTimer++;
-            if (boss.pattern === 'circle' && boss.shootTimer % 30 === 0) {
-                for (let i = 0; i < 8; i++) { const angle = (i / 8) * Math.PI * 2; enemyBullets.push({ x: boss.x + boss.width / 2, y: boss.y + boss.height / 2, vx: Math.cos(angle) * 3, vy: Math.sin(angle) * 3, damage: 10, color: '#ff0000' }); }
-            } else if (boss.pattern === 'zigzag') {
-                boss.moving += 0.05;
-                boss.x = canvas.width / 2 - boss.width / 2 + Math.sin(boss.moving) * 100;
-                if (boss.shootTimer % 20 === 0) enemyBullets.push({ x: boss.x + boss.width / 2, y: boss.y + boss.height, vx: 0, vy: 5, damage: 15, color: '#ff4400' });
-            } else if (boss.pattern === 'spread' && boss.shootTimer % 40 === 0) {
-                for (let i = -3; i <= 3; i++) enemyBullets.push({ x: boss.x + boss.width / 2, y: boss.y + boss.height, vx: i * 1.5, vy: 4, damage: 12, color: '#ff00ff' });
+        });
+        
+        // 更新敌人子弹
+        enemyBullets.forEach((b, i) => {
+            b.x += b.vx; b.y += b.vy;
+            if (hit({...b, w: 10, h: 10}, player) && player.invincible <= 0) {
+                player.hp -= 10; player.invincible = 30; enemyBullets.splice(i, 1);
             }
-        }
-        function dropPowerup(x, y) {
-            const rand = Math.random();
-            if (rand < 0.1) powerups.push({ x, y, type: 'gold', value: 10 * (1 + player.doubleGold), size: 15 });
-            else if (rand < 0.15) powerups.push({ x, y, type: 'health', value: 20, size: 15 });
-            else if (rand < 0.18) powerups.push({ x, y, type: 'weapon', types: ['spread', 'laser', 'missile'], size: 20 });
-        }
-        function createExplosion(x, y, color, count = 10) {
-            for (let i = 0; i < count; i++) { const angle = Math.random() * Math.PI * 2; const speed = Math.random() * 3 + 1; particles.push({ x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, life: 30, maxLife: 30, color, size: Math.random() * 4 + 2 }); }
-        }
-        function checkCollision(a, b) { return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y; }
-
-        function update() {
-            if (!gameState.running || gameState.paused || gameState.upgradeAvailable) return;
-            if (keys['ArrowLeft'] || keys['KeyA']) player.x -= player.speed;
-            if (keys['ArrowRight'] || keys['KeyD']) player.x += player.speed;
-            if (keys['ArrowUp'] || keys['KeyW']) player.y -= player.speed;
-            if (keys['ArrowDown'] || keys['KeyS']) player.y += player.speed;
-            player.x = Math.max(0, Math.min(canvas.width - player.width, player.x));
-            player.y = Math.max(0, Math.min(canvas.height - player.height, player.y));
-            if (keys['Space'] || keys['KeyJ']) playerShoot();
-            if (player.invincible > 0) player.invincible--;
-            enemySpawnTimer++;
-            if (enemySpawnTimer >= enemySpawnRate && !boss) { spawnEnemy(); enemySpawnTimer = 0; enemySpawnRate = Math.max(20, 60 - gameState.level * 3); }
-            bullets.forEach((bullet, i) => {
-                bullet.x += bullet.vx; bullet.y += bullet.vy;
-                if (bullet.missile && enemies.length > 0) {
-                    let closest = null, minDist = Infinity;
-                    enemies.forEach(e => { const dist = Math.hypot(e.x - bullet.x, e.y - bullet.y); if (dist < minDist) { minDist = dist; closest = e; } });
-                    if (closest) { const angle = Math.atan2(closest.y - bullet.y, closest.x - bullet.x); bullet.vx += Math.cos(angle) * 0.3; bullet.vy += Math.sin(angle) * 0.3; }
-                }
-                if (bullet.y < -20 || bullet.y > canvas.height + 20) bullets.splice(i, 1);
-            });
-            enemies.forEach((enemy, i) => {
-                enemy.y += enemy.speed;
-                enemy.shootTimer++;
-                if (enemy.shootTimer > 100) { enemyShoot(enemy); enemy.shootTimer = 0; }
-                if (checkCollision(enemy, player) && player.invincible <= 0) { player.hp -= 20; player.invincible = 60; createExplosion(player.x + player.width/2, player.y + player.height/2, '#ff0000', 20); }
-                if (enemy.y > canvas.height) enemies.splice(i, 1);
-            });
-            if (boss) { if (boss.y < 50) boss.y += boss.speed; bossAttack(); if (checkCollision(boss, player) && player.invincible <= 0) { player.hp -= 30; player.invincible = 60; createExplosion(player.x + player.width/2, player.y + player.height/2, '#ff0000', 20); } }
-            enemyBullets.forEach((bullet, i) => {
-                bullet.x += bullet.vx; bullet.y += bullet.vy;
-                if (checkCollision({...bullet, width: 10, height: 10}, player) && player.invincible <= 0) { player.hp -= bullet.damage; player.invincible = 30; enemyBullets.splice(i, 1); }
-                if (bullet.y > canvas.height || bullet.y < 0) enemyBullets.splice(i, 1);
-            });
-            bullets.forEach((bullet, bi) => {
-                enemies.forEach((enemy, ei) => {
-                    if (bullet.x > enemy.x && bullet.x < enemy.x + enemy.width && bullet.y > enemy.y && bullet.y < enemy.y + enemy.height) {
-                        enemy.hp -= bullet.damage; bullet.penetration--;
-                        if (bullet.penetration <= 0) bullets.splice(bi, 1);
-                        if (enemy.hp <= 0) { gameState.score += enemy.score; gameState.gold += enemy.gold * (1 + player.doubleGold); gameState.killCount++; createExplosion(enemy.x + enemy.width/2, enemy.y + enemy.height/2, enemy.color); dropPowerup(enemy.x + enemy.width/2, enemy.y + enemy.height/2); enemies.splice(ei, 1); }
+            if (b.y > canvas.height) enemyBullets.splice(i, 1);
+        });
+        
+        // 子弹击中敌人
+        bullets.forEach((b, bi) => {
+            enemies.forEach((e, ei) => {
+                if (b.x > e.x && b.x < e.x + e.w && b.y > e.y && b.y < e.y + e.h) {
+                    e.hp -= player.damage;
+                    if (e.hp <= 0) {
+                        score += e.score; gold += e.gold;
+                        explode(e.x + e.w/2, e.y + e.h/2, e.c);
+                        dropPowerup(e.x + e.w/2, e.y + e.h/2);
+                        enemies.splice(ei, 1);
                     }
-                });
-                if (boss && bullet.x > boss.x && bullet.x < boss.x + boss.width && bullet.y > boss.y && bullet.y < boss.y + boss.height) {
-                    boss.hp -= bullet.damage; bullet.penetration--; createExplosion(bullet.x, bullet.y, boss.color, 5);
-                    if (bullet.penetration <= 0) bullets.splice(bi, 1);
-                    if (boss.hp <= 0) { gameState.bossesDefeated++; gameState.score += 500; gameState.gold += 100; createExplosion(boss.x + boss.width/2, boss.y + boss.height/2, boss.color, 50); boss = null; showUpgrade(); }
+                    bullets.splice(bi, 1);
                 }
             });
-            powerups.forEach((p, i) => {
-                if (player.magnet > 0) { const dx = player.x + player.width/2 - p.x, dy = player.y + player.height/2 - p.y, dist = Math.hypot(dx, dy); if (dist < 150) { p.x += (dx / dist) * 3; p.y += (dy / dist) * 3; } }
-                p.y += 2;
-                if (checkCollision({...p, x: p.x - p.size/2, y: p.y - p.size/2, width: p.size, height: p.size}, player)) {
-                    if (p.type === 'gold') gameState.gold += p.value;
-                    else if (p.type === 'health') player.hp = Math.min(player.hp + p.value, player.maxHp);
-                    else if (p.type === 'weapon') player.weaponType = p.types[Math.floor(Math.random() * p.types.length)];
-                    powerups.splice(i, 1);
-                }
-                if (p.y > canvas.height) powerups.splice(i, 1);
-            });
-            particles.forEach((p, i) => { p.x += p.vx; p.y += p.vy; p.life--; if (p.life <= 0) particles.splice(i, 1); });
-            if (gameState.score > gameState.level * 500 && !boss) { gameState.level++; enemySpawnRate = Math.max(20, 60 - gameState.level * 3); if (gameState.level % 5 === 0) spawnBoss(); }
-            if (player.hp <= 0) { gameState.running = false; gameOverDiv.classList.remove('hidden'); document.getElementById('finalScore').textContent = gameState.score; document.getElementById('finalLevel').textContent = gameState.level; document.getElementById('finalBosses').textContent = gameState.bossesDefeated; document.getElementById('finalGold').textContent = gameState.gold; }
-            document.getElementById('level').textContent = gameState.level;
-            document.getElementById('score').textContent = gameState.score;
-            document.getElementById('gold').textContent = Math.floor(gameState.gold);
-            document.getElementById('hpFill').style.width = (player.hp / player.maxHp * 100) + '%';
-        }
-
-        function draw() {
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            if (player.invincible % 4 < 2) {
-                ctx.fillStyle = '#00ffff';
-                ctx.beginPath();
-                ctx.moveTo(player.x + player.width / 2, player.y);
-                ctx.lineTo(player.x + player.width, player.y + player.height);
-                ctx.lineTo(player.x + player.width / 2, player.y + player.height - 10);
-                ctx.lineTo(player.x, player.y + player.height);
-                ctx.closePath();
-                ctx.fill();
-                ctx.fillStyle = weaponTypes[player.weaponType].color;
-                ctx.beginPath();
-                ctx.arc(player.x + player.width / 2, player.y + player.height / 2, 8, 0, Math.PI * 2);
-                ctx.fill();
+        });
+        
+        // 更新道具
+        powerups.forEach((p, i) => {
+            p.y += 2;
+            if (hit({x: p.x - 10, y: p.y - 10, w: 20, h: 20}, player)) {
+                if (p.type === 'gold') gold += p.v;
+                else if (p.type === 'heal') player.hp = Math.min(player.hp + p.v, player.maxHp);
+                powerups.splice(i, 1);
             }
-            bullets.forEach(bullet => { if (bullet.laser) { ctx.fillStyle = bullet.color; ctx.fillRect(bullet.x - bullet.width / 2, bullet.y, bullet.width, 30); } else { ctx.fillStyle = bullet.color; ctx.beginPath(); ctx.arc(bullet.x, bullet.y, bullet.missile ? 6 : 4, 0, Math.PI * 2); ctx.fill(); } });
-            enemies.forEach(enemy => { ctx.fillStyle = enemy.color; ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height); ctx.fillStyle = '#333'; ctx.fillRect(enemy.x, enemy.y - 5, enemy.width, 3); ctx.fillStyle = '#0f0'; ctx.fillRect(enemy.x, enemy.y - 5, enemy.width * (enemy.hp / enemy.maxHp), 3); });
-            if (boss) { ctx.fillStyle = boss.color; ctx.fillRect(boss.x, boss.y, boss.width, boss.height); ctx.fillStyle = '#333'; ctx.fillRect(boss.x, boss.y - 10, boss.width, 5); ctx.fillStyle = '#f00'; ctx.fillRect(boss.x, boss.y - 10, boss.width * (boss.hp / boss.maxHp), 5); }
-            enemyBullets.forEach(bullet => { ctx.fillStyle = bullet.color; ctx.beginPath(); ctx.arc(bullet.x, bullet.y, 5, 0, Math.PI * 2); ctx.fill(); });
-            powerups.forEach(p => { ctx.fillStyle = p.type === 'gold' ? '#ffd700' : p.type === 'health' ? '#00ff00' : '#ff00ff'; ctx.beginPath(); ctx.arc(p.x, p.y, p.size / 2, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = '#000'; ctx.font = '10px Arial'; ctx.textAlign = 'center'; ctx.fillText(p.type === 'gold' ? '💰' : p.type === 'health' ? '❤️' : '🔫', p.x, p.y + 4); });
-            particles.forEach(p => { ctx.fillStyle = p.color; ctx.globalAlpha = p.life / p.maxLife; ctx.beginPath(); ctx.arc(p.x, p.y, p.size,0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1; });
+            if (p.y > canvas.height) powerups.splice(i, 1);
+        });
+        
+        // 更新粒子
+        particles.forEach((p, i) => { p.x += p.vx; p.y += p.vy; p.life--; if (p.life <= 0) particles.splice(i, 1); });
+        
+        // 过关
+        if (score > level * 500) {
+            level++;
+            spawnRate = Math.max(20, 60 - level * 3);
+            if (level % 5 === 0) {
+                const bt = bossTypes[Math.min(level/5 - 1, bossTypes.length-1)];
+                boss = { x: canvas.width/2 - bt.w/2, y: -bt.h, w: bt.w, h: bt.h, hp: bt.hp, maxHp: bt.hp, c: bt.c, pattern: bt.pattern, timer: 0 };
+            }
         }
-        function gameLoop() { if (gameState.running) { update(); draw(); } requestAnimationFrame(gameLoop); }
-        function showUpgrade() {
-            gameState.upgradeAvailable = true;
-            const options = document.getElementById('upgradeOptions');
-            options.innerHTML = '';
-            const shuffled = [...upgrades].sort(() => Math.random() - 0.5).slice(0, 3);
-            shuffled.forEach(u => {
-                const card = document.createElement('div');
-                card.className = 'upgrade-card ' + u.rarity;
-                card.innerHTML = '<div class="upgrade-icon">' + u.icon + '</div><div class="upgrade-name">' + u.name + '</div><div class="upgrade-desc">' + u.desc + '</div>';
-                card.onclick = function() { u.apply(); gameState.upgradeAvailable = false; upgradeModal.classList.add('hidden'); };
-                options.appendChild(card);
-            });
-            upgradeModal.classList.remove('hidden');
+        
+        // 游戏结束
+        if (player.hp <= 0) {
+            gameRunning = false;
+            document.getElementById('gameCanvas').style.display = 'none';
+            document.getElementById('uiPanel').style.display = 'none';
+            document.getElementById('hint').style.display = 'none';
+            document.getElementById('finalScore').textContent = score;
+            document.getElementById('finalLevel').textContent = level;
+            document.getElementById('finalBosses').textContent = bossesDefeated;
+            document.getElementById('gameOverMenu').style.display = 'flex';
         }
-        document.addEventListener('keydown', function(e) { keys[e.code] = true; if (e.code === 'Space') e.preventDefault(); });
-        document.addEventListener('keyup', function(e) { keys[e.code] = false; });
         
-        // 触摸控制
-        const joystickKnob = document.getElementById('joystickKnob');
-        let touchStartX = 0, touchStartY = 0;
+        // 绘制
+        ctx.fillStyle = 'rgba(0,0,0,0.3)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
         
-        touchControls.addEventListener('touchstart', function(e) {
-            const touch = e.touches[0];
-            touchStartX = touch.clientX;
-            touchStartY = touch.clientY;
+        // 玩家
+        if (player.invincible % 4 < 2) {
+            ctx.fillStyle = '#0ff';
+            ctx.beginPath();
+            ctx.moveTo(player.x + player.w/2, player.y);
+            ctx.lineTo(player.x + player.w, player.y + player.h);
+            ctx.lineTo(player.x + player.w/2, player.y + player.h - 10);
+            ctx.lineTo(player.x, player.y + player.h);
+            ctx.closePath();
+            ctx.fill();
+        }
+        
+        // 子弹
+        bullets.forEach(b => {
+            ctx.fillStyle = b.c;
+            ctx.beginPath();
+            ctx.arc(b.x, b.y, b.laser ? 5 : 4, 0, Math.PI * 2);
+            ctx.fill();
         });
         
-        touchControls.addEventListener('touchmove', function(e) {
-            e.preventDefault();
-            const touch = e.touches[0];
-            const dx = touch.clientX - touchStartX;
-            const dy = touch.clientY - touchStartY;
-            const maxDist = 35;
-            const dist = Math.min(Math.hypot(dx, dy), maxDist);
-            const angle = Math.atan2(dy, dx);
-            joystickKnob.style.transform = 'translate(calc(-50% + ' + (Math.cos(angle) * dist) + 'px), calc(-50% + ' + (Math.sin(angle) * dist) + 'px))';
-            keys['ArrowLeft'] = dx < -15;
-            keys['ArrowRight'] = dx > 15;
-            keys['ArrowUp'] = dy < -15;
-            keys['ArrowDown'] = dy > 15;
+        // 敌人
+        enemies.forEach(e => {
+            ctx.fillStyle = e.c;
+            ctx.fillRect(e.x, e.y, e.w, e.h);
+            ctx.fillStyle = '#333';
+            ctx.fillRect(e.x, e.y - 4, e.w, 3);
+            ctx.fillStyle = '#0f0';
+            ctx.fillRect(e.x, e.y - 4, e.w * (e.hp / e.maxHp), 3);
         });
         
-        touchControls.addEventListener('touchend', function() {
-            joystickKnob.style.transform = 'translate(-50%, -50%)';
-            keys['ArrowLeft'] = keys['ArrowRight'] = keys['ArrowUp'] = keys['ArrowDown'] = false;
+        // 敌人子弹
+        enemyBullets.forEach(b => {
+            ctx.fillStyle = b.c;
+            ctx.beginPath();
+            ctx.arc(b.x, b.y, 5, 0, Math.PI * 2);
+            ctx.fill();
         });
         
-        fireBtn.addEventListener('touchstart', function(e) { e.preventDefault(); keys['Space'] = true; });
-        fireBtn.addEventListener('touchend', function(e) { e.preventDefault(); keys['Space'] = false; });
+        // 道具
+        powerups.forEach(p => {
+            ctx.fillStyle = p.type === 'gold' ? '#fd0' : '#0f0';
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 10, 0, Math.PI * 2);
+            ctx.fill();
+        });
+        
+        // 粒子
+        particles.forEach(p => {
+            ctx.fillStyle = p.c;
+            ctx.globalAlpha = p.life / 30;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.globalAlpha = 1;
+        });
+        
+        updateUI();
+        requestAnimationFrame(gameLoop);
+    }
+    
+    // 键盘事件
+    document.addEventListener('keydown', e => { keys[e.code] = true; if (e.code === 'Space') e.preventDefault(); });
+    document.addEventListener('keyup', e => keys[e.code] = false);
+    
+    // 触摸控制
+    const joystick = document.getElementById('joystick');
+    const joystickKnob = document.getElementById('joystickKnob');
+    let joyStartX, joyStartY;
+    
+    joystick.addEventListener('touchstart', e => {
+        const t = e.touches[0];
+        joyStartX = t.clientX;
+        joyStartY = t.clientY;
+    });
+    
+    joystick.addEventListener('touchmove', e => {
+        e.preventDefault();
+        const t = e.touches[0];
+        const dx = t.clientX - joyStartX, dy = t.clientY - joyStartY;
+        const dist = Math.min(30, Math.hypot(dx, dy));
+        const a = Math.atan2(dy, dx);
+        joystickKnob.style.transform = `translate(${Math.cos(a) * dist - 20}px, ${Math.sin(a) * dist - 20}px)`;
+        keys['ArrowLeft'] = dx < -15; keys['ArrowRight'] = dx > 15;
+        keys['ArrowUp'] = dy < -15; keys['ArrowDown'] = dy > 15;
+    });
+    
+    joystick.addEventListener('touchend', () => {
+        joystickKnob.style.transform = 'translate(-20px, -20px)';
+        keys['ArrowLeft'] = keys['ArrowRight'] = keys['ArrowUp'] = keys['ArrowDown'] = false;
+    });
+    
+    document.getElementById('fireBtn').addEventListener('touchstart', e => { e.preventDefault(); keys['Space'] = true; });
+    document.getElementById('fireBtn').addEventListener('touchend', e => { e.preventDefault(); keys['Space'] = false; });
     </script>
 </body>
 </html>
