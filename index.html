@@ -3,16 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>星际战机 V5 - 肉鸽版</title>
+    <title>星际战机 V6 - 肉鸽版</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        html, body { width: 100%; height: 100%; overflow: hidden; background: #000; }
+        html, body { width: 100%; height: 100%; overflow: hidden; background: #000; touch-action: none; }
         body { 
             display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
             padding-top: 15px;
             background: linear-gradient(180deg, #0a0a1a 0%, #1a1a3a 50%, #0d0d2b 100%);
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             min-height: 100vh;
+            overscroll-behavior: none;
         }
         
         .title { color: #00ffff; font-size: 20px; font-weight: 800; text-shadow: 0 0 20px #00ffff; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
@@ -24,7 +25,7 @@
         #infoBar.show { display: flex; }
         .info-item { color: #fff; font-size: 10px; display: flex; align-items: center; gap: 3px; }
         .hp-bar { width: 45px; height: 5px; background: #222; border-radius: 2px; overflow: hidden; }
-        .hp-fill { height: 100%; background: linear-gradient(90deg, #4f4, #8f8); width: 100%; transition: width 0.2s; }
+        .hp-fill { height: 100%; background: linear-gradient(90deg, #4f4, #8f8); width: 100%; transition: width 0.15s; }
         
         #gameCanvas { display: none; width: 100%; aspect-ratio: 3/4; border: 2px solid rgba(0,255,255,0.5); border-radius: 10px; background: #050508; box-shadow: 0 0 30px rgba(0,255,255,0.12); }
         #gameCanvas.show { display: block; }
@@ -94,12 +95,12 @@
         .joystick-base { width: 100px; height: 100px; background: rgba(255,255,255,0.06); border: 2px solid rgba(0,255,255,0.35); border-radius: 50%; position: relative; }
         .joystick-knob { width: 40px; height: 40px; background: radial-gradient(circle, #00ffff, #007788); border-radius: 50%; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 15px rgba(0,255,255,0.5); }
         
-        .fire-btn { display: none; position: fixed; bottom: 50px; right: 25px; width: 70px; height: 70px; background: radial-gradient(circle, #ff4433, #bb1100); border: 3px solid #ff6655; border-radius: 50%; color: #fff; font-size: 13px; font-weight: 800; align-items: center; justify-content: center; z-index: 200; box-shadow: 0 0 20px rgba(255,0,0,0.4); }
+        .fire-btn { display: none; position: fixed; bottom: 50px; right: 25px; width: 70px; height: 70px; background: radial-gradient(circle, #ff4433, #bb1100); border: 3px solid #ff6655; border-radius: 50%; color: #fff; font-size: 13px; font-weight: 800; align-items: center; justify-content: center; z-index: 200; box-shadow: 0 0 20px rgba(255,0,0,0.4); user-select: none; -webkit-user-select: none; }
         .fire-btn.show { display: flex; }
     </style>
 </head>
 <body>
-    <div class="title">🚀 星际战机 <span class="version">V5</span></div>
+    <div class="title">🚀 星际战机 <span class="version">V6</span></div>
     
     <div id="gameContainer">
         <div id="infoBar">
@@ -112,10 +113,9 @@
         <canvas id="gameCanvas" width="340" height="450"></canvas>
         <div id="hint">电脑：WASD/方向键 | 空格射击</div>
         
-        <!-- 主菜单 -->
         <div class="menu" id="mainMenu">
             <div class="menu-title">🚀 星际战机</div>
-            <div class="menu-subtitle">V5 肉鸽版</div>
+            <div class="menu-subtitle">V6 肉鸽版</div>
             <div class="menu-features">
                 <p>🎮 <span class="highlight">4种武器</span> - 普通/散弹/激光/导弹</p>
                 <p>💎 <span class="highlight">丰富道具</span> - 升级打怪更轻松</p>
@@ -130,13 +130,11 @@
             <button class="btn-start" onclick="startGame()">开始游戏</button>
         </div>
         
-        <!-- 升级菜单 -->
         <div class="menu hidden" id="upgradeMenu">
-            <div class="menu-title" style="font-size: 24px;">⚡ 选择升级!</div>
+            <div class="menu-title" style="font-size:24px;">⚡ 选择升级!</div>
             <div class="upgrade-grid" id="upgradeGrid"></div>
         </div>
         
-        <!-- 游戏结束 -->
         <div class="menu hidden" id="gameOverMenu">
             <div class="menu-title">💀 游戏结束</div>
             <div class="game-over-stats">
@@ -149,15 +147,13 @@
         </div>
     </div>
     
-    <!-- 触摸控制 -->
     <div class="touch-controls" id="touchControls">
         <div class="joystick-base"><div class="joystick-knob" id="joystickKnob"></div></div>
     </div>
     <div class="fire-btn" id="fireBtn">开火</div>
 
     <script>
-    // ===== 游戏配置 =====
-    const V = 'V5';
+    const V = 'V6';
     const CW = 340, CH = 450;
     let difficulty = 'easy';
     
@@ -167,17 +163,14 @@
         document.querySelector('.diff-btn.'+d).classList.add('active');
     }
     
-    // 难度配置
     const DIFF = {
         easy: { hp: 150, enemyHp: 0.6, enemySpeed: 0.7, spawnRate: 80, enemyDmg: 12, bossHp: 0.5 },
         medium: { hp: 100, enemyHp: 1, enemySpeed: 1, spawnRate: 60, enemyDmg: 18, bossHp: 1 },
         hard: { hp: 80, enemyHp: 1.4, enemySpeed: 1.3, spawnRate: 40, enemyDmg: 25, bossHp: 1.6 }
     };
     
-    // 武器
     const WP = { normal: {c:'#00ffff',d:10}, spread: {c:'#ff00ff',d:8}, laser: {c:'#00ff00',d:14}, missile: {c:'#ff6600',d:22} };
     
-    // 升级
     const UP = [
         {id:'dmg',n:'伤害+30%',i:'⚔️',d:'伤害提升',r:'common',f:()=>p.dmg*=1.3},
         {id:'fr',n:'射速+25%',i:'⚡',d:'射击更快',r:'common',f:()=>p.fr=Math.max(70,player.fr*0.75)},
@@ -192,7 +185,6 @@
         {id:'dbl',n:'双倍金币',i:'💰',d:'金币+100%',r:'rare',f:()=>p.dbl=1}
     ];
     
-    // 敌人 - 更小更简单
     const ENEMY = [
         {hp:20,s:2,sc:10,g:5,w:24,h:24,c:'#ff6666'},
         {hp:10,s:4,sc:12,g:6,w:20,h:20,c:'#ffff66'},
@@ -200,35 +192,33 @@
         {hp:15,s:2.5,sc:15,g:8,w:26,h:26,c:'#ff66ff'}
     ];
     
-    // BOSS
     const BOSS = [
         {hp:300,w:80,h:60,c:'#ff0000',p:'circle'},
         {hp:500,w:95,h:50,c:'#ff4400',p:'zigzag'},
         {hp:700,w:120,h:80,c:'#ff00ff',p:'spread'}
     ];
     
-    // ===== 游戏变量 =====
     const cvs = document.getElementById('gameCanvas');
     const ctx = cvs.getContext('2d');
     let running = false, score = 0, gold = 0, level = 1, bossKills = 0;
     let st = 0, sr = 60;
-    
-    let p = {x:152,y:380,w:32,h:42,hp:100,maxHp:100,spd:4,wpn:'normal',dmg:10,fr:180,lf:0,inv:0,shield:0,magnet:0,dbl:0,pen:1};
+    let p = {x:152,y:380,w:32,h:42,hp:100,maxHp:100,spd:4,wpn:'normal',dmg:10,fr:180,lf:0,inv:0,shield:0,magnet:0,dbl:0};
     let blts = [], ens = [], eblts = [], pwr = [], pts = [], boss = null;
     let keys = {};
+    let autoFire = false;
     
-    // ===== 游戏函数 =====
     function startGame() {
         const d = DIFF[difficulty];
         ['mainMenu','upgradeMenu','gameOverMenu'].forEach(id=>document.getElementById(id).classList.add('hidden'));
         ['gameCanvas','infoBar','hint','touchControls','fireBtn'].forEach(id=>document.getElementById(id).classList.add('show'));
         
         score=0;gold=0;level=1;bossKills=0;
-        p={x:CW/2-16,y:CH-65,w:32,h:42,hp:d.hp,maxHp:d.hp,spd:4,wpn:'normal',dmg:10,fr:180,lf:0,inv:0,shield:0,magnet:0,dbl:0,pen:1};
+        p={x:CW/2-16,y:CH-65,w:32,h:42,hp:d.hp,maxHp:d.hp,spd:4,wpn:'normal',dmg:10,fr:180,lf:0,inv:0,shield:0,magnet:0,dbl:0};
         blts=[];ens=[];eblts=[];pwr=[];pts=[];boss=null;
         st=0;sr=d.spawnRate;
         running=true;
         updateUI();
+        lastTime = performance.now();
         loop();
     }
     
@@ -239,7 +229,7 @@
         document.getElementById('hpFill').style.width=(p.hp/p.maxHp*100)+'%';
     }
     
-    function shoot() {
+    function tryShoot() {
         const now=Date.now();
         if(now-p.lf<p.fr)return;
         p.lf=now;
@@ -260,13 +250,13 @@
     }
     
     function spawnEnemy() {
-        const d = DIFF[difficulty];
+        const d=DIFF[difficulty];
         const t=ENEMY[Math.floor(Math.random()*ENEMY.length)];
         ens.push({x:Math.random()*(CW-t.w),y:-t.h,hp:t.hp*d.enemyHp,s:t.s*d.enemySpeed,sc:t.sc,g:t.g,w:t.w,h:t.h,c:t.c,mx:t.hp*d.enemyHp});
     }
     
     function spawnBoss() {
-        const d = DIFF[difficulty];
+        const d=DIFF[difficulty];
         const i=Math.min(Math.floor((level-1)/2),BOSS.length-1);
         const b=BOSS[i];
         boss={x:CW/2-b.w/2,y:-b.h,w:b.w,h:b.h,hp:b.hp*d.bossHp*(1+(level-1)*0.2),mx:b.hp*d.bossHp*(1+(level-1)*0.2),c:b.c,p:b.p,tm:0,md:1};
@@ -289,28 +279,33 @@
     
     function hit(a,b){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;}
     
-    // ===== 主循环 =====
-    function loop() {
+    let lastTime = 0;
+    
+    function loop(now=performance.now()) {
         if(!running)return;
+        
+        const dt = Math.min(now - lastTime, 50);
+        lastTime = now;
         const d = DIFF[difficulty];
         
-        // 移动
+        // 修复：射击时仍可移动
         if(keys['ArrowLeft']||keys['KeyA'])p.x-=p.spd;
         if(keys['ArrowRight']||keys['KeyD'])p.x+=p.spd;
         if(keys['ArrowUp']||keys['KeyW'])p.y-=p.spd;
         if(keys['ArrowDown']||keys['KeyS'])p.y+=p.spd;
+        
         p.x=Math.max(0,Math.min(CW-p.w,p.x));
         p.y=Math.max(0,Math.min(CH-p.h,p.y));
         
-        if(keys['Space']||keys['KeyJ'])shoot();
+        // 修复：按住攻击时自动连发
+        if(keys['Space']||keys['KeyJ']||autoFire)tryShoot();
+        
         if(p.inv>0)p.inv--;
         if(p.shield>0)p.shield--;
         
-        // 生成
         st++;
         if(st>=sr&&!boss){spawnEnemy();st=0;sr=Math.max(25,DIFF[difficulty].spawnRate-Math.floor(level*1.5));}
         
-        // 子弹
         blts.forEach((b,i)=>{
             b.x+=b.vx;b.y+=b.vy;
             if(b.missile&&ens.length>0){
@@ -321,26 +316,23 @@
             if(b.y<-15||b.y>CH+15)blts.splice(i,1);
         });
         
-        // 敌人
         ens.forEach((e,i)=>{
             e.y+=e.s;
             if(e.y>CH)ens.splice(i,1);
             else if(hit(e,p)&&p.inv<=0&&p.shield<=0){p.hp-=d.enemyDmg;p.inv=40;explode(p.x+p.w/2,p.y+p.h/2,'#f00',12);}
         });
         
-        // 敌弹
         eblts.forEach((b,i)=>{
             b.x+=b.vx;b.y+=b.vy;
             if(hit({x:b.x-4,y:b.y-4,w:8,h:8},p)&&p.inv<=0&&p.shield<=0){p.hp-=6;p.inv=20;eblts.splice(i,1);}
             if(b.y>CH||b.y<0)eblts.splice(i,1);
         });
         
-        // BOSS
         if(boss){
             if(boss.y<20)boss.y+=0.6;
             boss.tm++;
             if(boss.p==='zigzag'){boss.x+=boss.md*2;if(boss.x<=0||boss.x+boss.w>=CW)boss.md*=-1;}
-            if(boss.tm%30==0){
+            if(Math.floor(boss.tm)%30===0){
                 if(boss.p==='circle'){
                     for(let i=0;i<8;i++){const a=(i/8)*Math.PI*2;eblts.push({x:boss.x+boss.w/2,y:boss.y+boss.h/2,vx:Math.cos(a)*3,vy:Math.sin(a)*3});}
                 }else if(boss.p==='spread'){
@@ -350,7 +342,6 @@
             if(hit(boss,p)&&p.inv<=0&&p.shield<=0){p.hp-=20;p.inv=40;}
         }
         
-        // 击中
         blts.forEach((b,bi)=>{
             ens.forEach((e,ei)=>{
                 if(b.x>e.x&&b.x<e.x+e.w&&b.y>e.y&&b.y<e.y+e.h){
@@ -365,11 +356,10 @@
             }
         });
         
-        // 道具
         pwr.forEach((pp,i)=>{
             if(p.magnet){
-                const dx=(pp.x+p.x)-pp.x,dy=(pp.y+p.y)-pp.y,d=Math.hypot(dx,dy);
-                if(d<120){pp.x+=(dx/d)*3;pp.y+=(dy/d)*3;}
+                const dx=p.x-pp.x,dy=p.y-pp.y,dist=Math.hypot(dx,dy);
+                if(dist<120){pp.x+=(dx/dist)*3;pp.y+=(dy/dist)*3;}
             }
             pp.y+=2;
             if(hit({x:pp.x-10,y:pp.y-10,w:20,h:20},p)){
@@ -382,13 +372,10 @@
             if(pp.y>CH)pwr.splice(i,1);
         });
         
-        // 粒子
         pts.forEach((pt,i)=>{pt.x+=pt.vx;pt.y+=pt.vy;pt.lf--;if(pt.lf<=0)pts.splice(i,1);});
         
-        // 过关
         if(score>level*400&&!boss){level++;sr=Math.max(25,DIFF[difficulty].spawnRate-Math.floor(level*1.5));if(level%5===0)spawnBoss();}
         
-        // 结束
         if(p.hp<=0){
             running=false;
             ['gameCanvas','infoBar','hint','touchControls','fireBtn'].forEach(id=>document.getElementById(id).classList.remove('show'));
@@ -408,11 +395,9 @@
         ctx.fillStyle='#050508';
         ctx.fillRect(0,0,CW,CH);
         
-        // 星空
         ctx.fillStyle='rgba(255,255,255,0.3)';
         for(let i=0;i<30;i++){ctx.fillRect((i*53+Date.now()*0.01)%CW,(i*31)%CH,1,1);}
         
-        // 玩家
         if(p.inv%4<2){
             ctx.fillStyle=p.shield>0?'rgba(0,255,255,0.4)':'#00ffff';
             ctx.beginPath();
@@ -426,25 +411,19 @@
             ctx.beginPath();ctx.arc(p.x+p.w/2,p.y+p.h/2,6,0,Math.PI*2);ctx.fill();
         }
         
-        // 子弹
         blts.forEach(b=>{ctx.fillStyle=b.c;ctx.beginPath();ctx.arc(b.x,b.y,b.laser?3:4,0,Math.PI*2);ctx.fill();});
         
-        // 敌人
         ens.forEach(e=>{ctx.fillStyle=e.c;ctx.fillRect(e.x,e.y,e.w,e.h);ctx.fillStyle='#222';ctx.fillRect(e.x,e.y-3,e.w,2);ctx.fillStyle='#4f4';ctx.fillRect(e.x,e.y-3,e.w*(e.hp/e.mx),2);});
         
-        // BOSS
         if(boss){ctx.fillStyle=boss.c;ctx.fillRect(boss.x,boss.y,boss.w,boss.h);ctx.fillStyle='#222';ctx.fillRect(boss.x,boss.y-5,boss.w,3);ctx.fillStyle='#f44';ctx.fillRect(boss.x,boss.y-5,boss.w*(boss.hp/boss.mx),3);}
         
-        // 敌弹
         eblts.forEach(b=>{ctx.fillStyle='#ff4444';ctx.beginPath();ctx.arc(b.x,b.y,4,0,Math.PI*2);ctx.fill();});
         
-        // 道具
         pwr.forEach(pp=>{
             ctx.fillStyle=pp.t==='gold'?'#ffd700':pp.t==='heal'?'#00ff00':pp.t==='shield'?'#00aaff':'#ff00ff';
             ctx.beginPath();ctx.arc(pp.x,pp.y,9,0,Math.PI*2);ctx.fill();
         });
         
-        // 粒子
         pts.forEach(pt=>{ctx.fillStyle=pt.c;ctx.globalAlpha=pt.lf/20;ctx.beginPath();ctx.arc(pt.x,pt.y,2.5,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;});
     }
     
@@ -463,23 +442,34 @@
         document.getElementById('upgradeMenu').classList.remove('hidden');
     }
     
-    // 输入
-    document.addEventListener('keydown',e=>{keys[e.code]=true;if(e.code==='Space')e.preventDefault();});
+    // 输入 - 修复：阻止默认行为防止滚动
+    document.addEventListener('keydown',e=>{
+        keys[e.code]=true;
+        if(e.code==='Space'){e.preventDefault();}
+    });
     document.addEventListener('keyup',e=>keys[e.code]=false);
     
-    // 触摸
+    // 触摸 - 修复：防止滚动
     const joy=document.querySelector('.joystick-base'),knob=document.getElementById('joystickKnob');
     let jx,jy;
-    joy.addEventListener('touchstart',e=>{jx=e.touches[0].clientX;jy=e.touches[0].clientY;});
+    
+    joy.addEventListener('touchstart',e=>{e.preventDefault();jx=e.touches[0].clientX;jy=e.touches[0].clientY;},{passive:false});
     joy.addEventListener('touchmove',e=>{
         e.preventDefault();
         const t=e.touches[0],dx=t.clientX-jx,dy=t.clientY-jy,d=Math.min(28,Math.hypot(dx,dy)),a=Math.atan2(dy,dx);
         knob.style.transform=`translate(calc(-50%+${Math.cos(a)*d}px),calc(-50%+${Math.sin(a)*d}px))`;
         keys['ArrowLeft']=dx<-10;keys['ArrowRight']=dx>10;keys['ArrowUp']=dy<-10;keys['ArrowDown']=dy>10;
+    },{passive:false});
+    joy.addEventListener('touchend',e=>{
+        e.preventDefault();
+        knob.style.transform='translate(-50%,-50%)';
+        keys['ArrowLeft']=keys['ArrowRight']=keys['ArrowUp']=keys['ArrowDown']=false;
     });
-    joy.addEventListener('touchend',()=>{knob.style.transform='translate(-50%,-50%)';keys['ArrowLeft']=keys['ArrowRight']=keys['ArrowUp']=keys['ArrowDown']=false;});
-    document.getElementById('fireBtn').addEventListener('touchstart',e=>{e.preventDefault();keys['Space']=true;});
-    document.getElementById('fireBtn').addEventListener('touchend',e=>{e.preventDefault();keys['Space']=false;});
+    
+    const fireBtn=document.getElementById('fireBtn');
+    fireBtn.addEventListener('touchstart',e=>{e.preventDefault();autoFire=true;keys['Space']=true;},{passive:false});
+    fireBtn.addEventListener('touchend',e=>{e.preventDefault();autoFire=false;keys['Space']=false;});
+    fireBtn.addEventListener('touchcancel',e=>{autoFire=false;keys['Space']=false;});
     </script>
 </body>
 </html>
