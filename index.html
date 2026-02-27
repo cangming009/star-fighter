@@ -258,8 +258,8 @@
                 knob.style.transform = `translate(calc(-50%+${Math.cos(angle)*dist}px),calc(-50%+${Math.sin(angle)*dist}px))`;
                 keys['ArrowLeft'] = dx < -15;
                 keys['ArrowRight'] = dx > 15;
-                keys['ArrowUp'] = dy < -15;
-                keys['ArrowDown'] = dy > 15;
+                keys['ArrowUp'] = dy > 15;
+                keys['ArrowDown'] = dy < -15;
             });
             joy.addEventListener('touchend', () => {
                 joyDown = false;
@@ -358,8 +358,8 @@
                 // 玩家移动
                 if (keys['ArrowLeft'] || keys['KeyA']) player.x -= player.speed * dt;
                 if (keys['ArrowRight'] || keys['KeyD']) player.x += player.speed * dt;
-                if (keys['ArrowUp'] || keys['KeyW']) player.y -= player.speed * dt;
-                if (keys['ArrowDown'] || keys['KeyS']) player.y += player.speed * dt;
+                if (keys['ArrowUp'] || keys['KeyW']) player.y += player.speed * dt;
+                if (keys['ArrowDown'] || keys['KeyS']) player.y -= player.speed * dt;
                 
                 player.x = Math.max(20, Math.min(300, player.x));
                 player.y = Math.max(50, Math.min(440, player.y));
