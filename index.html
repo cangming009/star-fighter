@@ -169,7 +169,7 @@
     
     renderer.render(scene,camera);requestAnimationFrame(gameLoop);updateUI();}
     
-    function showUpgrade(){running=false;['gameCanvas','infoBar','hint'].forEach(id=>document.getElementById(id).classList.remove('show'));const g=document.getElementById('upgradeGrid');g.innerHTML='';[...UP].sort(()=>Math.random()-0.5).slice(0,3).forEach(u=>{const d=document.createElement('div');d.className='upgrade-card '+u.r;d.innerHTML=<div class="card-icon">'+u.i+'</div><div class="card-name">'+u.n+'</div>';d.onclick=()=>{u.f();document.getElementById('upgradeMenu').classList.add('hidden');running=true;gameLoop();};g.appendChild(d);});document.getElementById('upgradeMenu').classList.remove('hidden');}
+    function showUpgrade(){running=false;['gameCanvas','infoBar','hint'].forEach(id=>document.getElementById(id).classList.remove('show'));const g=document.getElementById('upgradeGrid');g.innerHTML='';[...UP].sort(()=>Math.random()-0.5).slice(0,3).forEach(u=>{const d=document.createElement('div');d.className='upgrade-card '+u.r;d.innerHTML='<div class="card-icon">'+u.i+'</div><div class="card-name">'+u.n+'</div>';d.onclick=()=>{u.f();document.getElementById('upgradeMenu').classList.add('hidden');running=true;gameLoop();};g.appendChild(d);});document.getElementById('upgradeMenu').classList.remove('hidden');}
     
     document.addEventListener('keydown',e=>{keys[e.code]=true;if(e.code==='Space')e.preventDefault();});
     document.addEventListener('keyup',e=>keys[e.code]=false);
